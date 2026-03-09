@@ -9,7 +9,7 @@ end
 function _hydro_pretty_path
     set --local parts (string split / $argv[1])
     set --local total (count $parts)
-    set --local keep $hydro_pwd_dir_levels
+    set --local keep (set --query argv[2] && echo $argv[2] || echo $hydro_pwd_dir_levels)
 
     set --local shortened
     for i in (seq 1 $total)
@@ -42,7 +42,11 @@ function _hydro_pwd --on-variable PWD --on-variable hydro_ignored_git_paths --on
         if test -z $after_git
             set --global _hydro_pwd (_hydro_pretty_path $dir)
         else
-            set --global _hydro_pwd "$(_hydro_pretty_path $git_dir)$(_hydro_pretty_path $after_git)"
+            # Count non-empty components in after_git
+            set --local after_parts (string split / $after_git | string match -v '')
+            set --local after_count (count $after_parts)
+            set --local git_keep (math "max(1, $hydro_pwd_dir_levels - $after_count)")
+            set --global _hydro_pwd "$(_hydro_pretty_path $git_dir $git_keep)$(_hydro_pretty_path $after_git $after_count)"
         end
     end
 end
